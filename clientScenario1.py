@@ -17,7 +17,7 @@ port = 8888;
 #id_flag = '0'
 tempPacket = '0' + 'INIT'
 
-#FIXME: Send an intial packet to ask server what I need (server will respond you need to login )
+#Send an intial packet to ask server what I need (server will respond you need to login )
 s.sendto(tempPacket, (host, port))
 
 while(1) :
