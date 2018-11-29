@@ -53,7 +53,7 @@ while(1) :
     elif menuChoice == '2':
       id_flag = '' #FIXME
     else:
-      id_flag = '-1'
+      id_flag = '+'
     msg = 'MENU'
     packet = id_flag + msg
     s.sendto(packet, (host, port)) 
@@ -65,10 +65,18 @@ while(1) :
     #exit
     #break
     sys.exit()
-    
-    
+  
+#--All error flags go below here
+  
+  #client entered invalid username, ask again
+  elif '-' == flag_id:
+    print 'Error: Username does not exist. Please try again \n'
+    msg = raw_input('Enter your username: ')
+    flag_id = '2'
+    packet = id_flag + msg
+    s.sendto(packet, (host, port)) 
   else:
-    print 'ERROR, FLAGID: ' + flag_id
+    print 'CATASTROPHIC ERROR, FLAGID: ' + flag_id
     break
     
     

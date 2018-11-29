@@ -24,25 +24,27 @@ except socket.error , msg:
 print 'Socket bind complete'
 
 class Client:
-  def __init__(self, address, userName, curr_flag, password):
+  def __init__(self, address, userName, curr_flag, password, permAddr, tempAddr):
     self.address = address
     self.userName = userName
     self.curr_flag = curr_flag
     self.password = password
+    self.permAddr = permAddr
+    self.tempAddr = tempAddr
 
 client_list = []
 
 #a profile is created and stored on signup. Info is updated when person connects
-One_profile = Client('Ones Addr','One','','1')
+One_profile = Client('1Addr','One','','1','','')
 client_list.append(One_profile)
 
-Two_profile = Client('2Addr','Two','','2')
+Two_profile = Client('2Addr','Two','','2','','')
 client_list.append(Two_profile)
 
-Three_profile = Client('3addr','Three','','3')
+Three_profile = Client('3addr','Three','','3','','')
 client_list.append(One_profile)
 
-Four_profile = Client('4addr','Four','','4')
+Four_profile = Client('4addr','Four','','4','','')
 client_list.append(Four_profile)
 
 #connection arrays
@@ -74,7 +76,7 @@ while 1:
     #client_list.append(Client(addr[0],'TEST','-1')
     
     #This bad boy finds where the userName matches the object in the list and outputs the address. USE IT TO UPDATE ADDRESS WHEN THEY LOGIN
-    print [Client.address for Client in client_list if Client.userName == 'Four']
+    #print [Client.address for Client in client_list if Client.userName == 'Four']
 
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------   
     
@@ -121,9 +123,6 @@ while 1:
     
     #print flag_id
 
-    
-
-
     #if we have no data, we're done here 
     if not data: 
         print '###ERROR: No Data in client packet###'
@@ -138,7 +137,11 @@ while 1:
     elif '2' == flag_id:
       #Gonna somehow associate the userName with the password. I know we have the object, but anyone can attempt a login, so we do that later
       if [Client.userName for Client in client_list if Client.userName == msg]:
+        Client.tempAddr = addr[0]
         flag_id = '3'
+        print 'LOG: Client sent valid username. Storing temp addr. Sending password request'
+        print 'TEMP ADDR: ' + Client.tempAddr
+
       
       #parse Client object to see if userName is in there. If it is, save this address in tempAddr (ADD THIS TO OBJECT)
       #if msg in userNames:
@@ -146,15 +149,18 @@ while 1:
       #  pwIndex = userNames.index(msg)
       #  flag_id = '3'
       else:
-        #error on login
+        #error on login, ask for username again
         print '### ERROR: Client sent wrong user ###'
-        flag_id = '-2'
+        flag_id = '-'
 
     elif flag_id == '4': 
       #find addr in Client under tempAddr. If the flag is correct and pw is correct, make this the perm address for the session
       #user has successfully logged in, send flag for menu
-      if msg == userPasswords[pwIndex]: 
+      if [Client.userName for Client in client_list if Client.password == msg]: 
         flag_id = '5'
+        Client.permAddr = addr[0]
+        print 'PERM ADDR: ' + Client.permAddr
+        print 'LOG: Correct password and username combo...saving address'
         #assocaiates the address with the username
         #if userNames[pwIndex] not in addrToUser:
         #  addrToUser.append(userNames[pwIndex] + ' ' + addr[0])
@@ -162,9 +168,9 @@ while 1:
           
          # print addrToUser[-1]
       else:
-        print 'pw error with the arrays'
+        print 'ERROR: Wrong password \n'
     elif flag_id == '6': #logout option, deletes user info from connection arrays!
-      print 'Log out success!'
+      print 'LOG: Log out success!'
       #use the addr[0] to see who is logged in. Remove that entry from the arrays
       #print curr_flag_index
       #print curr_flag[curr_flag_index]
@@ -187,7 +193,7 @@ while 1:
       #have them send new password
       print "hi"
 
-    elif flag_id == '-1':#error, send previous packet again (this one might need tweaking) Maybe keep a copy of the last packet sent?
+    elif flag_id == '+':#error, send previous packet again (this one might need tweaking) Maybe keep a copy of the last packet sent?
       print 'ERROR: Unexpected input from client, resending previous packet'
       
     
