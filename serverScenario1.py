@@ -35,16 +35,16 @@ class Client:
 client_list = []
 
 #a profile is created and stored on signup. Info is updated when person connects
-One_profile = Client('1Addr','One','','1','','')
+One_profile = Client('','One','','1','','')
 client_list.append(One_profile)
 
-Two_profile = Client('2Addr','Two','','2','','')
+Two_profile = Client('','Two','','2','','')
 client_list.append(Two_profile)
 
-Three_profile = Client('3addr','Three','','3','','')
+Three_profile = Client('','Three','','3','','')
 client_list.append(One_profile)
 
-Four_profile = Client('4addr','Four','','4','','')
+Four_profile = Client('','Four','','4','','')
 client_list.append(Four_profile)
 
 #connection arrays
@@ -52,11 +52,6 @@ client_addr_arr = []
 curr_flag = []
 curr_flag_index = -1
 
-#user info (if I had more time, I would make a list or an array of arrays to hold the info
-userNames = ['One', 'Two', 'Three', 'Four']
-userPasswords = ['1', '2', '3', '4']
-#When a user logs in, the addr of that machine gets assocate to the login
-addrToUser = []
 #contains the data last sent to the user in case they send something incorrect
 lastSent = []
 
@@ -97,32 +92,6 @@ while 1:
       #Go back to menu
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    
-    #if (addr[0] not in client_addr_arr): #adds the client's addr to array if they haven't connected already
-      #client_addr_arr.append(addr[0])
-      #adds the flag to an array
-      #curr_flag.append(data[0:1])
-      #the index of where the address shows up corresponds to the curr_flag index
-      #curr_flag_index = client_addr_arr.index(addr[0])
-    #else: #it is in the array (note, a dropped client still has their address here, but the flag_id is reset client side (which is a no-no security wise but i'll fix that later). Find a way to set id_flag to 0 in disconnect
-     # print '-----Addr found! ' + addr[0]
-      #find where the address is in array, use the index location of where that address is in the array, set flag
-    #  curr_flag_index = client_addr_arr.index(addr[0])
-    #  curr_flag[curr_flag_index] = data[0:1]
-      
-      #ISSUE: Having the indexes based off addr is problematic when new people show up AND LEAVE!!! the order gets messed up!!!
-      # New idea: make a list/array of objects! Each object will contain the addr the user is using, a username slot (to be updated when they sign in), the current flag id (as to have the server up to date on what the client has done)
-      
-      #print 'Addr was found, curflag: ' + curr_flag[curr_flag_index]
-      #flag_id = curr_flag[curr_flag_index]
-      
-    #pprint(client_addr_arr)
-    #curr_flag_index = client_addr_arr.index(addr[0])
-
-    #flag_id = curr_flag[curr_flag_index]
-    
-    #print flag_id
-
     #if we have no data, we're done here 
     if not data: 
         print '###ERROR: No Data in client packet###'
@@ -136,62 +105,104 @@ while 1:
     #userName recieved    
     elif '2' == flag_id:
       #Gonna somehow associate the userName with the password. I know we have the object, but anyone can attempt a login, so we do that later
-      if [Client.userName for Client in client_list if Client.userName == msg]:
-        Client.tempAddr = addr[0]
-        flag_id = '3'
-        print 'LOG: Client sent valid username. Storing temp addr. Sending password request'
-        print 'TEMP ADDR: ' + Client.tempAddr
-
-      
-      #parse Client object to see if userName is in there. If it is, save this address in tempAddr (ADD THIS TO OBJECT)
-      #if msg in userNames:
-        #associates the username with the correct pw. Client needs to send the correct pw to gain access
-      #  pwIndex = userNames.index(msg)
-      #  flag_id = '3'
-      else:
-        #error on login, ask for username again
-        print '### ERROR: Client sent wrong user ###'
-        flag_id = '-'
+      #if [Client.userName for Client in client_list if Client.userName == msg]:
+      #  Client.tempAddr = addr[0]
+      for index, Client in enumerate(client_list):
+        if Client.userName == msg:
+          print 'LOG: Valid user found: ' + client_list[index].userName
+          flag_id = '3'
+          break
+        else:
+          index = -1
+        #flag_id = '3'
+      print 'LOG: Client sent valid username. Storing temp addr. Sending password request'
+      client_list[index].tempAddr = addr[0]
+      print 'TEMP ADDR: ' + client_list[index].tempAddr
+      #else:
+      #  #error on login, ask for username again
+      #  print '### ERROR: Client sent wrong user ###'
+      #  flag_id = '-'
 
     elif flag_id == '4': 
       #find addr in Client under tempAddr. If the flag is correct and pw is correct, make this the perm address for the session
       #user has successfully logged in, send flag for menu
-      if [Client.userName for Client in client_list if Client.password == msg]: 
-        flag_id = '5'
-        Client.permAddr = addr[0]
+      #if [Client.userName for Client in client_list if Client.password == msg] and [Client.userName for Client in client_list if Client.tempAddr == addr[0]]:
+      print 'LOG: ELIF FLAG ID 4'
+      for index_1, Client in enumerate(client_list):
+        if Client.tempAddr == addr[0]:
+          print client_list[index_1].userName
+          client_list[index_1].permAddr = addr[0]
+
+          flag_id = '5'
+          break
+        else:
+          index_1 = -1
+      for index_2, Client in enumerate(client_list):
+        if Client.password == msg:
+          break
+        else:
+          index = -1
+        #Checks to see if someone already logged in (Note: This might break if a user quits abruptly [no logout]. In that case, comment this out heh) Logical fix is a timeout
+        if Client.permAddr != '' :
+          print 'ERROR: Someone else logged in'
+          flag_id = 'L'
+        #else:
+          #Client.permAddr = addr[0]
+          #flag_id = '5'
+
+        #I changed it back since if someone drops out, login access to the person dies with them. New logins boot old user though...
+        #Client.permAddr = addr[0]
+        #flag_id = '5'
         print 'PERM ADDR: ' + Client.permAddr
         print 'LOG: Correct password and username combo...saving address'
-        #assocaiates the address with the username
-        #if userNames[pwIndex] not in addrToUser:
-        #  addrToUser.append(userNames[pwIndex] + ' ' + addr[0])
-        #  assocIndex = addrToUser.index(userNames[pwIndex] + ' ' + addr[0])
-          
-         # print addrToUser[-1]
       else:
         print 'ERROR: Wrong password \n'
     elif flag_id == '6': #logout option, deletes user info from connection arrays!
-      print 'LOG: Log out success!'
-      #use the addr[0] to see who is logged in. Remove that entry from the arrays
-      #print curr_flag_index
-      #print curr_flag[curr_flag_index]
       
-      #client_addr_arr.remove(addr[0])
-      
-      #remove from client_addr_arr
-      
-      #remove from curr_flag
-      
-      #remove from addrToUser array too!
-      
-      #remove curr_flag_index
-      
-      #remove lastSent
-      flag_id = '7'
+      if [Client.address for Client in client_list if Client.permAddr == addr[0]]:
+        #Set permAddr and tempAddr to empty
+        Client.permAddr = ''
+        Client.tempAddr = ''
+        print 'LOG: Log out success!'
+        flag_id = '7'
+      else:
+        print 'ERROR: Client addr mismatch that SHOULD NOT OCCUR!!!'
+        #Orrrrr it occurs when logged in elsewhere!
+        #To do: Implement it so you can't log in if someone is already in
 
-    elif flag_id == 4: #change vlaue!!!!
+    elif flag_id == '8':
       #have user enter password again (needs to be correct to change)
       #have them send new password
-      print "hi"
+
+      #checks to see if we're talking to the correct address
+      if [Client.userName for Client in client_list if Client.permAddr == addr[0]]:
+        flag_id = '9'
+      else:
+        flag_id = 'L'
+    
+    #We got the correct password, now ask client for new one
+    elif flag_id == 'K':
+      if [Client.userName for Client in client_list if Client.permAddr == addr[0]]:
+        flag_id = 'O'
+        print '----------------- ' + flag_id
+      else:
+        flag_id = 'L'
+
+    elif flag_id == 'C':
+      for index, Client in enumerate(client_list):
+        if Client.permAddr == addr[0]:
+          break
+        else:
+          index = -1
+        print client_list[1].permAddr
+      #if [index for Client in client_list if Client.permAddr == addr[0]]:
+      #  print index + ' : INNNNNN'
+      #  Client.password = msg
+      #  print 'New pw: ' + Client.password + ' For user: ' + Client.userName
+        flag_id = '5'
+      else:
+        flag_id = 'L'
+
 
     elif flag_id == '+':#error, send previous packet again (this one might need tweaking) Maybe keep a copy of the last packet sent?
       print 'ERROR: Unexpected input from client, resending previous packet'
@@ -200,7 +211,6 @@ while 1:
     else:
       print "ERROR: Unexpected error. Packet loss?"
     
-    #testing VS
 
     #make a copy of the packet here (make sure to associate it correctly!
     #backUpPacket = 

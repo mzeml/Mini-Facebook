@@ -26,19 +26,22 @@ while(1) :
   addr = d[1]
   
   flag_id = reply[0]
-  
+
   #have a check were if we get an error flag, we send a flag asking for last packet
-  
+
   #server sees us, asked for userName
   if '1' == flag_id:
     msg = raw_input('Enter your username: ')
     id_flag = '2'
     packet = id_flag + msg
     s.sendto(packet, (host, port)) 
-    
-  elif '3' == flag_id:
+
+  elif '3' == flag_id or '9' == flag_id:
     msg = getpass.getpass()
-    id_flag = '4'
+    if '3' == flag_id:
+      id_flag = '4'
+    else:
+      id_flag = 'K'
     packet = id_flag + msg
     s.sendto(packet, (host, port)) 
   #elif statement if -2 or -3, re enter user and pw (set flag back)
@@ -51,23 +54,27 @@ while(1) :
     if menuChoice == '1':
       id_flag = '6'
     elif menuChoice == '2':
-      id_flag = '' #FIXME
+      id_flag = '8'
     else:
       id_flag = '+'
+
     msg = 'MENU'
     packet = id_flag + msg
     s.sendto(packet, (host, port)) 
-    
+
     #id_flag = ''
   elif '7' == flag_id:
     #we logged out
     print 'Log out successful! Goodbye!'
-    #exit
-    #break
     sys.exit()
-  
+  elif 'O' == flag_id:
+    msg = getpass.getpass(prompt='Enter new password: ')
+    print 'Password Changed!'
+    id_flag = 'C'
+    packet = id_flag + msg
+    s.sendto(packet, (host, port)) 
+
 #--All error flags go below here
-  
   #client entered invalid username, ask again
   elif '-' == flag_id:
     print 'Error: Username does not exist. Please try again \n'
@@ -75,11 +82,10 @@ while(1) :
     flag_id = '2'
     packet = id_flag + msg
     s.sendto(packet, (host, port)) 
+  elif 'L' == flag_id:
+    print 'Error: User is already logged in!'
+    sys.exit()
   else:
     print 'CATASTROPHIC ERROR, FLAGID: ' + flag_id
+    #Maybe just say error, logged in elsewhere hehe
     break
-    
-    
-    
-    
-    
