@@ -85,7 +85,19 @@ while(1) :
   elif 'L' == flag_id:
     print 'Error: User is already logged in!'
     sys.exit()
+  elif 'B' == flag_id or 'b' == flag_id:
+    print 'Error: Wrong password. Try again'
+    msg = getpass.getpass()
+    if flag_id == 'b':
+      id_flag = '4'
+    else:
+      id_flag = 'K'
+    packet = id_flag + msg
+    s.sendto(packet, (host, port)) 
+
+
   else:
-    print 'CATASTROPHIC ERROR, FLAGID: ' + flag_id
+    #print 'CATASTROPHIC ERROR, FLAGID: ' + flag_id
+    print 'Error: Session expired, you are logged in elsewhere. Please logout out of the other session or log back in'
     #Maybe just say error, logged in elsewhere hehe
     break
