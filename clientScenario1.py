@@ -21,21 +21,15 @@ tempPacket = '0' + 'INIT'
 s.sendto(tempPacket, (host, port))
 
 while(1) :
-  #FIXME: Change this to be in an if statment for when user has already logged in. Inital packet should be a "handskake packet"
-  #msg = raw_input('Enter message to server: ')
-  #packet = id_flag + msg
-
-  #packet sent
-  #s.sendto(packet, (host, port))
   d = s.recvfrom(1024)
   reply = d[0]
-  #FIXME: parse for ID flag and have if statements for each ID flag (eg 1 means enter user!)
   addr = d[1]
   
   flag_id = reply[0]
   
   #have a check were if we get an error flag, we send a flag asking for last packet
   
+  #server sees us, asked for userName
   if '1' == flag_id:
     msg = raw_input('Enter your username: ')
     id_flag = '2'
@@ -68,7 +62,7 @@ while(1) :
   elif '7' == flag_id:
     #we logged out
     print 'Log out successful! Goodbye!'
-    exit
+    #exit
     #break
     sys.exit()
     
