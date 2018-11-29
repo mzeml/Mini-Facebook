@@ -57,4 +57,4 @@ class FinalTopol( Topo ):
 
 
 
-topos = { 'finaltopol': ( lambda: FinalTopol() ) } #fixed spelling
+topos = { 'finaltopol': ( lambda: FinalTopol() ) } #fixed spelling (Fix 4)
