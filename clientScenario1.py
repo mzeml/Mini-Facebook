@@ -99,5 +99,4 @@ while(1) :
   else:
     #print 'CATASTROPHIC ERROR, FLAGID: ' + flag_id
     print 'Error: Session expired, you are logged in elsewhere. Please logout out of the other session or log back in'
-    #Maybe just say error, logged in elsewhere hehe
     break
