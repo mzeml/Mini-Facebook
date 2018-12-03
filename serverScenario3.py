@@ -24,27 +24,30 @@ except socket.error , msg:
 print 'Socket bind complete'
 
 class Client:
-  def __init__(self, userName, password, permAddr, tempAddr):
+  def __init__(self, userName, password, permAddr, tempAddr, unreadCount):
     self.userName = userName
     self.password = password
     self.permAddr = permAddr
     self.tempAddr = tempAddr
+    self.unreadCount = unreadCount
 
 #Holds all the profiles
 client_list = []
 
 #a profile is created and stored on signup. Info is updated when person connects
-One_profile = Client('One','1','','')
+One_profile = Client('One','1','','', 0) #Gonna see if this works!!!!!!! ---------------!!!!
 client_list.append(One_profile)
 
-Two_profile = Client('Two','2','','')
+Two_profile = Client('Two','2','','','0')
 client_list.append(Two_profile)
 
-Three_profile = Client('Three','3','','')
+Three_profile = Client('Three','3','','','0')
 client_list.append(Three_profile)
 
-Four_profile = Client('Four','4','','')
+Four_profile = Client('Four','4','','','0')
 client_list.append(Four_profile)
+
+connectedUsers = []
 
 #now keep talking with the client
 while 1:
@@ -55,8 +58,10 @@ while 1:
     addr = d[1] #addr of sender
 
     #Stores the current flag
-    flag_id = data[0:1]
+    flag_id = data[:1]
     msg = data[1:]
+
+    id_flag = flag_id #this helps differntiate what is being sent and recv. Reason I set id_flag to flag_id is for error checking
     
     #client_list.append(Client(addr[0],'TEST','-1')
     
@@ -91,23 +96,26 @@ while 1:
     #new client connected, send back a request for userName
     if '0' == flag_id: 
         #flag_id of 1 prompts client for userName
-        flag_id = '1'
+        id_flag = '1'
     
     #userName recieved    
-    elif '2' == flag_id:
+    elif '2' == flag_id or flag_id == 'UN':
 
       #Checks if valid userName
       for index, Client in enumerate(client_list):
         if Client.userName == msg:
           print 'LOG: Valid user found: ' + client_list[index].userName
-          flag_id = '3'
+          if flag_id == 'UN'
+            id_flag = 'YU'
+          else:
+              id_flag = '3'
           print 'LOG: Client sent valid username. Storing temp addr. Sending password request'
           client_list[index].tempAddr = addr[0]
           break
         else:
           #Keeps searching. If nothing gets found, then flag_id remains '-' (indicating no user found)
           index = -1
-          flag_id = '-'
+          id_flag = '-'
           print 'LOG: User not yet found, trying again...'
 
     elif flag_id == '4': 
@@ -123,12 +131,14 @@ while 1:
       for index_2, Client in enumerate(client_list):
         if Client.password == msg and Client.tempAddr == addr[0]:
           client_list[index_2].permAddr = addr[0]
-          flag_id = '5'
+          connectedUsers.append(addr[0])
+          id_flag = '5'
           print 'LOG: Password and username match, associating tempAddr to permAddr for this session'
+          #FIXME: Add flag for if their are messages and send that intead. 5 should only be for 0 messgaes
           break
         else:
           index_2 = -1
-          flag_id = 'b'
+          id_flag = 'b'
           print 'LOG: Password not matched, trying to find [1]...'
 
     elif flag_id == '6': #logout option, deletes user info from connection arrays!
@@ -136,13 +146,14 @@ while 1:
         if Client.permAddr == addr[0]:
           client_list[index].tempAddr = ''
           client_list[index].permAddr = ''
+          connectedUsers[connectedUsers.index(addr[0])] = ''
           print 'LOG: Log out success!'
-          flag_id = '7'
+          id_flag = '7'
           break
         else:
-          #Keeps searching. If nothing gets found, then flag_id remains '-' (indicating no user found)
+          #Keeps searching. If nothing gets found, then id_flag remains '-' (indicating no user found)
           index = -1
-          flag_id = '~' #Basically, if the client gets this, something is very wrong
+          id_flag = '~' #Basically, if the client gets this, something is very wrong
           print 'LOG: Addr match not yet found, trying again...'
 
     elif flag_id == '8':
@@ -151,12 +162,12 @@ while 1:
 
       for index, Client in enumerate(client_list):
         if Client.permAddr == addr[0]:
-          flag_id = '9'
+          id_flag = '9'
           print 'LOG: Correct client, Asking for old password'
           break
         else:
           index = -1
-          flag_id = '~'
+          id_flag = '~'
           #print 'LOG: Password not matched, trying to find [2] -> ' + msg
           #print msg
     
@@ -165,27 +176,37 @@ while 1:
       for index, Client in enumerate(client_list):
         if Client.permAddr == addr[0] and Client.password == msg:
           print 'LOG: Old password correct, asking client for new one'
-          flag_id = 'O'
+          id_flag = 'O'
           break
         else:
-          #Keeps searching. If nothing gets found, then flag_id remains '-' (indicating no user found)
+          #Keeps searching. If nothing gets found, then id_flag remains '-' (indicating no user found)
           index = -1
-          flag_id = 'B' #FIXEME Have this go to wrong PW case!!!!
+          id_flag = 'B' #FIXEME Have this go to wrong PW case!!!!
           print 'LOG: Password not matched, trying to find [2] -> ' + msg
           #print 'LOG: Addr match not yet found, trying again...'
     elif flag_id == 'C':
       for index, Client in enumerate(client_list):
         if Client.permAddr == addr[0]:
           client_list[index].password = msg
-          flag_id = '5'
+          id_flag = '5'
           print 'LOG: Password successfully changed, sending client to menu'
           break
         else:
           index = -1
-          flag_id = 'L'
+          id_flag = 'L'
+    #elif flag_id = 'MU': #Gets message from client and sends to the addr the client wants to send to. Packet will contain id flag, message, and user who sent it. That way, the recvr knows who to send a message to
+      #if recv online, send right way
+      #else, increase un-read count by 1 and stores the message to be read later
+        #how can I do this? I for sure need a way to associate messages to the recv. Some kind of table where recv can have many messages. I guess add a dict for the user Object?
+    
+    #elif... #Sends a message to everyone on the connectedUsers list. Make sure to skip the send-to at the bottom!!! (OR SEND FLAG BACK TO MENU YOU GENIUS)
+      #also, ignore the sender (or not, the specs are vauge. Just send it to everyone that's connected)
+
+    #elif... #sends un-read messages back to client. I envision a loop that iterates through the messges and sends them, one by one. This means you'll need to either skip the sendto at the bottom OR send a menu flag after!! THATS IT U GENIUS
 
     elif flag_id == '+':#error, send previous packet again (this one might need tweaking) Maybe keep a copy of the last packet sent?
       print 'ERROR: Unexpected input from client!'
+      #FIXME: Client sends wrong menu choice (aka invalid option) triggers this error!!!
     
     else:
       print "ERROR: Unexpected error. Packet loss?"
@@ -193,8 +214,10 @@ while 1:
     #DEBUGGING WINDOW
 
     #sends client what server needs accordinf to the values above
-    print 'LOG: Got from client: ' + msg + '    Responding/Sending to client: ' + flag_id + ' addr: ' + addr[0]
-    s.sendto(flag_id, addr)
+    print 'LOG: Got from client: ' + msg + '    Responding/Sending to client: ' + id_flag + ' addr: ' + addr[0]
+    
+    #you will need to change this to be able to send messages (or make an if statement if you are afraid of breaking this)
+    s.sendto(id_flag, addr)
 
     print 'LOG: Server recv this from client: ' + msg
     print 'LOG: CURRENT VALUES OF ARRAYS'
@@ -206,6 +229,8 @@ while 1:
     print [Client.userName for Client in client_list]
     print 'pw: '
     print [Client.password for Client in client_list]
+    print 'Online users'
+    pprint(connectedUsers)
 
 
      
