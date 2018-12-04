@@ -30,24 +30,36 @@ class Client:
     self.permAddr = permAddr
     self.tempAddr = tempAddr
     self.unreadCount = unreadCount
+    self.unread_Msgs = []
+
+class senderToRecv:
+  def __init__(self, sender, senderName, recv, message):
+    self.sender = sender
+    self.senderName = senderName
+    self.recv = recv
+    self.message = message
 
 #Holds all the profiles
 client_list = []
+message_list = []
 
 #a profile is created and stored on signup. Info is updated when person connects
 One_profile = Client('One','1','','', 0) #Gonna see if this works!!!!!!! ---------------!!!!
 client_list.append(One_profile)
 
-Two_profile = Client('Two','2','','','0')
+Two_profile = Client('Two','2','','', 0)
 client_list.append(Two_profile)
 
-Three_profile = Client('Three','3','','','0')
+Three_profile = Client('Three','3','','', 0)
 client_list.append(Three_profile)
 
-Four_profile = Client('Four','4','','','0')
+Four_profile = Client('Four','4','','', 0)
 client_list.append(Four_profile)
 
-connectedUsers = []
+connected_users = []
+
+#senderToRecv = dict() #{}
+
 
 #now keep talking with the client
 while 1:
@@ -58,8 +70,10 @@ while 1:
     addr = d[1] #addr of sender
 
     #Stores the current flag
-    flag_id = data[:1]
-    msg = data[1:]
+    flag_id = data[0:2]
+    print flag_id
+
+    msg = data[2:]
 
     id_flag = flag_id #this helps differntiate what is being sent and recv. Reason I set id_flag to flag_id is for error checking
     
@@ -94,31 +108,47 @@ while 1:
         break
 
     #new client connected, send back a request for userName
-    if '0' == flag_id: 
+    if '00' == flag_id: 
         #flag_id of 1 prompts client for userName
-        id_flag = '1'
+        id_flag = '01'
     
     #userName recieved    
-    elif '2' == flag_id or flag_id == 'UN':
+    elif '02' == flag_id or flag_id == 'UN':
 
       #Checks if valid userName
       for index, Client in enumerate(client_list):
+        print 'LOOKING FOR ' + msg
         if Client.userName == msg:
           print 'LOG: Valid user found: ' + client_list[index].userName
-          if flag_id == 'UN'
+          if flag_id == 'UN':
             id_flag = 'YU'
-          else:
-              id_flag = '3'
-          print 'LOG: Client sent valid username. Storing temp addr. Sending password request'
-          client_list[index].tempAddr = addr[0]
+            print msg
+            for index_2, Client in enumerate(client_list):
+              if Client.permAddr == addr[0]:
+                senderName = client_list[index_2].userName
+                break
+              else:
+                index_2 = -1
+            mesgObj = senderToRecv(addr[0],senderName,msg,'')
+            #print mesgObj
+            message_list.append(mesgObj)
+            #senderToRecv.sender
+            print 'UN FLAG, SENDING YU'
+            break
+          elif flag_id == '02':
+            id_flag = '03'
+            print 'LOG: Client sent valid username. Storing temp addr. Sending password request'
+            client_list[index].tempAddr = addr[0]
+            break
           break
+          print 'cant seeee meeeee'
         else:
           #Keeps searching. If nothing gets found, then flag_id remains '-' (indicating no user found)
           index = -1
-          id_flag = '-'
+          id_flag = '--'
           print 'LOG: User not yet found, trying again...'
 
-    elif flag_id == '4': 
+    elif flag_id == '04': 
       #find addr in Client under tempAddr. If the flag is correct and pw is correct, make this the perm address for the session
       #user has successfully logged in, send flag for menu
       #if [Client.userName for Client in client_list if Client.password == msg] and [Client.userName for Client in client_list if Client.tempAddr == addr[0]]:
@@ -131,38 +161,38 @@ while 1:
       for index_2, Client in enumerate(client_list):
         if Client.password == msg and Client.tempAddr == addr[0]:
           client_list[index_2].permAddr = addr[0]
-          connectedUsers.append(addr[0])
-          id_flag = '5'
+          connected_users.append(addr[0])
+          id_flag = '05'
           print 'LOG: Password and username match, associating tempAddr to permAddr for this session'
           #FIXME: Add flag for if their are messages and send that intead. 5 should only be for 0 messgaes
           break
         else:
           index_2 = -1
-          id_flag = 'b'
+          id_flag = 'bb'
           print 'LOG: Password not matched, trying to find [1]...'
 
-    elif flag_id == '6': #logout option, deletes user info from connection arrays!
+    elif flag_id == '06': #logout option, deletes user info from connection arrays!
       for index, Client in enumerate(client_list):
         if Client.permAddr == addr[0]:
           client_list[index].tempAddr = ''
           client_list[index].permAddr = ''
-          connectedUsers[connectedUsers.index(addr[0])] = ''
+          connected_users[connected_users.index(addr[0])] = ''
           print 'LOG: Log out success!'
-          id_flag = '7'
+          id_flag = '07'
           break
         else:
           #Keeps searching. If nothing gets found, then id_flag remains '-' (indicating no user found)
           index = -1
-          id_flag = '~' #Basically, if the client gets this, something is very wrong
+          id_flag = '~~' #Basically, if the client gets this, something is very wrong
           print 'LOG: Addr match not yet found, trying again...'
 
-    elif flag_id == '8':
+    elif flag_id == '08':
       #have user enter password again (needs to be correct to change)
       #have them send new password
 
       for index, Client in enumerate(client_list):
         if Client.permAddr == addr[0]:
-          id_flag = '9'
+          id_flag = '09'
           print 'LOG: Correct client, Asking for old password'
           break
         else:
@@ -172,39 +202,69 @@ while 1:
           #print msg
     
     #Check PW, if correct, ask for new
-    elif flag_id == 'K':
+    elif flag_id == 'KK':
       for index, Client in enumerate(client_list):
         if Client.permAddr == addr[0] and Client.password == msg:
           print 'LOG: Old password correct, asking client for new one'
-          id_flag = 'O'
+          id_flag = 'OO'
           break
         else:
           #Keeps searching. If nothing gets found, then id_flag remains '-' (indicating no user found)
           index = -1
-          id_flag = 'B' #FIXEME Have this go to wrong PW case!!!!
+          id_flag = 'BB' #FIXEME Have this go to wrong PW case!!!!
           print 'LOG: Password not matched, trying to find [2] -> ' + msg
           #print 'LOG: Addr match not yet found, trying again...'
-    elif flag_id == 'C':
+    elif flag_id == 'CC':
       for index, Client in enumerate(client_list):
         if Client.permAddr == addr[0]:
           client_list[index].password = msg
-          id_flag = '5'
+          id_flag = '05'
           print 'LOG: Password successfully changed, sending client to menu'
           break
         else:
           index = -1
-          id_flag = 'L'
-    #elif flag_id = 'MU': #Gets message from client and sends to the addr the client wants to send to. Packet will contain id flag, message, and user who sent it. That way, the recvr knows who to send a message to
-      #if recv online, send right way
-      #else, increase un-read count by 1 and stores the message to be read later
+          id_flag = 'LL'
+    elif flag_id == 'MU': #Gets message from client and sends to the addr the client wants to send to. Packet will contain id flag, message, and user who sent it. That way, the recvr knows who to send a message to
+      for index, senderToRecv in enumerate(message_list):
+        if senderToRecv.sender == addr[0]:
+          message_list[index].message = msg
+          print message_list[index].message
+          id_flag = '15' #sends back to menu
+          print 'LOG: Assigned msg to recv!'
+          break
+        else:
+          index = -1
+          id_flag = '-+' #triggers cat error
+      
+      for index_2, Client in enumerate(client_list):
+        if Client.userName == message_list[index].recv and Client.permAddr != '': #if the recv is online
+          print 'LOG: USER IS ONLINE'
+          id_flag = 'RM'
+          packet = id_flag + message_list[index].senderName + ': ' + message_list[index].message
+          print 'LOG: Sending other client this: ' + packet
+          #dest = tuple([client_list[index_2].permAddr])
+          #print dest
+          s.sendto(packet, (client_list[index_2].permAddr))
+          break
+        else:
+          print 'LOG: USER NOT ONLINE YET'
+          index = -1
+      #if user is online, send message and remove message from messages_list
+        #first, iterate through the Client list to find where the Uname is so you can get permaddress. If permaddr empty, they are offline!!
+        #send message to perm addr like so: senderName + ': ' + message
+      
+      #message_list[index].recv
+      
+      #else, increase un-read count by 1
+        #append to array unreadMsgs as: userName + msg + \n for each message
         #how can I do this? I for sure need a way to associate messages to the recv. Some kind of table where recv can have many messages. I guess add a dict for the user Object?
     
     #elif... #Sends a message to everyone on the connectedUsers list. Make sure to skip the send-to at the bottom!!! (OR SEND FLAG BACK TO MENU YOU GENIUS)
       #also, ignore the sender (or not, the specs are vauge. Just send it to everyone that's connected)
 
     #elif... #sends un-read messages back to client. I envision a loop that iterates through the messges and sends them, one by one. This means you'll need to either skip the sendto at the bottom OR send a menu flag after!! THATS IT U GENIUS
-
-    elif flag_id == '+':#error, send previous packet again (this one might need tweaking) Maybe keep a copy of the last packet sent?
+      #Look at the messages_list
+    elif flag_id == '++':#error, send previous packet again (this one might need tweaking) Maybe keep a copy of the last packet sent?
       print 'ERROR: Unexpected input from client!'
       #FIXME: Client sends wrong menu choice (aka invalid option) triggers this error!!!
     
@@ -230,8 +290,16 @@ while 1:
     print 'pw: '
     print [Client.password for Client in client_list]
     print 'Online users'
-    pprint(connectedUsers)
-
+    pprint(connected_users)
+    #print 'senderToRecv:'
+    #print(senderToRecv)
+    print 'SENDER'
+    print [senderToRecv.sender for senderToRecv in message_list]
+    print [senderToRecv.senderName for senderToRecv in message_list]
+    print 'RECV'
+    print [senderToRecv.recv for senderToRecv in message_list]
+    print 'MSG'
+    print [senderToRecv.message for senderToRecv in message_list]
 
      
 s.close() 
