@@ -47,13 +47,14 @@ while(1) :
     packet = id_flag + msg
     s.sendto(packet, (host, port)) 
   #elif statement if -2 or -3, re enter user and pw (set flag back)
-  elif '05' == flag_id or flag_id == '15': #or add another flag indicating that unread messages exist
+  elif '05' == flag_id or flag_id == '15' or flag_id == 'RM': #or add another flag indicating that unread messages exist
     print '\n'
     if '05' == flag_id:
       print 'You have 0 unread messages \n'
     elif '15' == flag_id:
-      print 'DEBUG: FLAG !5, ENTERING MENU..... \n' #FIXME, remove this
-      
+      print 'DEBUG: FLAG 15, ENTERING MENU..... \n' #FIXME, remove this
+    elif 'RM' == flag_id:
+      print reply[2:]
     #else 
       #print unread count 
     print 'Main Menu: Select an option below by typing the number'
@@ -75,9 +76,11 @@ while(1) :
       msg = 'MENU'
       packet = id_flag + msg
       s.sendto(packet, (host, port)) 
-    elif menuChoice == '3':
+    elif menuChoice == '3': #want to send message.
       #ask who to send it to. Server will respond with a flag "X" if person is a valid user. Else, flag Y tells client not valid, try again
       msg = raw_input('Enter the username of who you want to send the message to: ')
+      raw = raw_input('Enter your message: ')
+      msg = msg + ': ' + raw #fixme: This sends the RECV uname plus the message. This is ok, but you need to change it so its the SENDER uname when saving the message server side!
       id_flag = 'UN'
       #print 'Message to server ' + msg
       packet = id_flag + msg
@@ -85,8 +88,11 @@ while(1) :
       #break
     #elif menuChoice == '4':
 
-    #elif menuChoice == '5':
-      
+    elif menuChoice == '5':
+      id_flag = 'CM'
+      msg = 'CHCKMSG'
+      packet = id_flag + msg
+      s.sendto(packet, (host, port))
     else:
       id_flag = '++'
       msg = 'ERROR'
@@ -103,16 +109,15 @@ while(1) :
     id_flag = 'CC'
     packet = id_flag + msg
     s.sendto(packet, (host, port)) 
-  elif 'YU' == flag_id:
-    msg = raw_input('Enter your message: ')
-    id_flag = 'MU'
-    packet = id_flag + msg
-    s.sendto(packet, (host, port)) 
-    #add packet and flag
-    #Somehow, the server will need to keep a record of who I am sending a message to. Maybe a dict? Or just do an array of objects I guess of SENDER and RECV
-  elif 'RM' == flag_id:
-    print msg
-#--All error flags go below here
+  # elif 'YU' == flag_id:
+  #   msg = raw_input('Enter your message: ')
+  #   id_flag = 'MU'
+  #   packet = id_flag + msg
+  #   s.sendto(packet, (host, port)) 
+  #   #add packet and flag
+  #   #Somehow, the server will need to keep a record of who I am sending a message to. Maybe a dict? Or just do an array of objects I guess of SENDER and RECV
+
+#--All error flags go below here--------
   #client entered invalid username, ask again
   elif '--' == flag_id:
     print 'Error: Username does not exist. Please try again \n'
