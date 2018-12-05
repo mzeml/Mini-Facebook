@@ -1,7 +1,10 @@
-# Mini-Facebook
+# Mini-Facebook Messaging System
 
 In this project, I used Mininet to emulate a network topology consisting of one server and three client nodes and implement a simple Facebook application on top of this topology using a client - server model. Clients run client codes to make use of the capabilities they are provided with and the server is responsible for authenticating users, receiving posts and messages from users and sending them to the proper intended recipient.
-##Specifications to Meet
+
+For the record, my instructor called this the Facebook project, I think it is more of like Snapchat messaging
+
+## Specifications to Meet
 
 0. Nothing should be stored client-side. I took this to mean no userdata or passwords.
 1. Whenever a user connects to the server, they should be asked for their username and password.
@@ -17,7 +20,7 @@ In this project, I used Mininet to emulate a network topology consisting of one 
 
 I managed to get all but 7 implemented. 7 would require threading, which is something I did not have time to do.
 
-##How it works
+## How it works
 
 0. You need to have a Mininet VM setup with a local NAT
 1. SSH into Mininet and run 'bash runTopol.sh'
@@ -25,7 +28,7 @@ I managed to get all but 7 implemented. 7 would require threading, which is some
 3. In the windows that start with C, run the client code
 4. Login with username and password, select menu options, and enjoy
 
-##Issues
+## Issues
 
 This project was done in 2 parts, with each part taking me roughly 3 days to do (on top of all my other classes). This means I was rushed which results in some issues.
 
