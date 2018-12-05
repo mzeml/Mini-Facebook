@@ -47,16 +47,17 @@ while(1) :
     packet = id_flag + msg
     s.sendto(packet, (host, port)) 
   #elif statement if -2 or -3, re enter user and pw (set flag back)
-  elif '05' == flag_id or flag_id == '15' or flag_id == 'RM': #or add another flag indicating that unread messages exist
+  elif '05' == flag_id or flag_id == '15' or flag_id == 'RM' or flag_id == 'NU': #or add another flag indicating that unread messages exist
     print '\n'
-    if '05' == flag_id:
-      print 'You have 0 unread messages \n'
-    elif '15' == flag_id:
-      print 'DEBUG: FLAG 15, ENTERING MENU..... \n' #FIXME, remove this
-    elif 'RM' == flag_id:
-      print reply[2:]
+    print 'You have' + reply[2:4] + ' unread messages \n' #It only 
+
+    if 'RM' == flag_id: #Outputs messages
+      print reply[4:]
+    elif 'NU' == flag_id:
+      print 'Error: User does not exist!'
     #else 
       #print unread count 
+    
     print 'Main Menu: Select an option below by typing the number'
     print 'Logout [1]'
     print 'Change password [2]'
@@ -86,8 +87,11 @@ while(1) :
       packet = id_flag + msg
       s.sendto(packet, (host, port))
       #break
-    #elif menuChoice == '4':
-
+    elif menuChoice == '4':
+      msg = raw_input('Enter message you want to broadcast to online users: ')
+      id_flag = 'br'
+      packet = id_flag + msg
+      s.sendto(packet, (host, port))
     elif menuChoice == '5':
       id_flag = 'CM'
       msg = 'CHCKMSG'
@@ -109,13 +113,6 @@ while(1) :
     id_flag = 'CC'
     packet = id_flag + msg
     s.sendto(packet, (host, port)) 
-  # elif 'YU' == flag_id:
-  #   msg = raw_input('Enter your message: ')
-  #   id_flag = 'MU'
-  #   packet = id_flag + msg
-  #   s.sendto(packet, (host, port)) 
-  #   #add packet and flag
-  #   #Somehow, the server will need to keep a record of who I am sending a message to. Maybe a dict? Or just do an array of objects I guess of SENDER and RECV
 
 #--All error flags go below here--------
   #client entered invalid username, ask again
@@ -137,11 +134,10 @@ while(1) :
       id_flag = 'KK'
     packet = id_flag + msg
     s.sendto(packet, (host, port)) 
-  elif  '-+' == flag_id:
+  elif '-+' == flag_id:
     print 'Error: Messaging error'
 
-
   else:
-    #print 'CATASTROPHIC ERROR, FLAGID: ' + flag_id
-    print 'Error: Session expired, you are logged in elsewhere. Please logout out of the other session or log back in'
+
+    print 'Error: Session expired. Please logout out and log back in'
     break

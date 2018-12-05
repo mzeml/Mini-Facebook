@@ -1,7 +1,6 @@
 import socket
 import sys
 from pprint import pprint
-from ast import literal_eval as make_tuple
  
 HOST = '10.0.0.4'
 PORT = 8888 # Arbitrary non-privileged port
@@ -13,8 +12,7 @@ try :
 except socket.error, msg :
     print 'Failed to create socket. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
     sys.exit()
- 
- 
+
 # Bind socket to local host and port
 try:
     s.bind((HOST, PORT))
@@ -52,11 +50,6 @@ client_list.append(Four_profile)
 
 connected_users = []
 
-#senderToRecv = dict() #{}
-
-#rawAddr = []
-
-
 #now keep talking with the client
 while 1:
     print 'SERVER LOG START: '
@@ -66,40 +59,18 @@ while 1:
     data = d[0] #contains actual message
     addr = d[1] #addr of sender
 
-    # if addr not in rawAddr:
-    #   rawAddr.append(addr)
-
-    # print 'Raw address: ' #FIXME: Remove entry when logging out
-    # for x in range(len(rawAddr)):
-    #   print rawAddr[x]
-
     #Stores the current flag
     flag_id = data[0:2]
     print flag_id
 
     msg = data[2:]
+    unreadMsgCnt = 0
+    for index, Client in enumerate(client_list):
+      if Client.tempAddr == addr[0] or Client.permAddr == addr[0]:
+          unreadMsgCnt = client_list[index].unreadCount #bug is this evernually outputs [] when empty
+          break
 
     id_flag = flag_id #this helps differntiate what is being sent and recv. Reason I set id_flag to flag_id is for error checking
-    
-
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------   
-    
-    #Step 1: Client sends a flag of 0. The server knows this means we need to ask client for userName.
-
-    #Step 2: Client sends username, server first checks to see if userNameClient exists in server records
-      #if it doesn't, send an error flag. This should result in an error msg and then the previous correct packet maybe? For now, force the user to relog
-      #If userNameClient is found on server, temporarily assocaiate the addr with that userName and send a flag that asks for password
-    #Step 3: Client sends a password. Server sees if clients addr is associated with a tempAddr
-      #If NO match, error out. The client shouldn't have gotten this far with a diff addr
-      #if it matches, check to see if password is correct for the uname associated with tempaddress
-        #If match, assign client addr to sessionAddr/permAddr. Meaning this addr is assoctaed with a logged in account. Send flag to show menu
-        #If NO match, say wrong pw, try again, send again. Have a loop in client for this specific error that asks for pw and sends back to server until pw is correct or 3 failed tries (then break)
-    #Step 4: At this point, we are logged in from an addr. Client sends the menu choice of the user. Depending on choice, execute it
-    #Step 5 (Logout): Removes user addr from Client object in both temp and session addr. Send user flag that will prompt a goodby msg and a break
-    #Step 6 (Change PW): Asks user to send PW again. 3 failed attempts goes to menu (or kills it or nothing, idk)
-      #If PW correct, prompt user for new PW twice. Maybe store in Client as tempPw1 and tempPw2 to see if they are identical? For now, just have whatever sent be the new pw
-      #Go back to menu
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     #if we have no data, we're done here 
     if not data: 
@@ -127,19 +98,19 @@ while 1:
           id_flag = '--'
           print 'LOG: User not yet found, trying again...'
     elif flag_id == '04': 
+      
       #find addr in Client under tempAddr. If the flag is correct and pw is correct, make this the perm address for the session
       #user has successfully logged in, send flag for menu
-
       #Checks to see if someone already logged in (Note: This might break if a user quits abruptly [no logout]. In that case, comment this out heh) Logical fix is a timeout
-
       #Searches list of Clients to see if the client we are talking to is the last client we just talked to for this userName
-      
       #if the password matches when the tempAddr matches, make tempAddr the perm addr
+
       for index_2, Client in enumerate(client_list):
         if Client.password == msg and Client.tempAddr == addr[0]:
           client_list[index_2].permAddr = addr[0]
           connected_users.append(addr[0])
           id_flag = '05'
+          #unreadMsgCnt = client_list[index_2].unreadCount
           print 'LOG: Password and username match, associating tempAddr to permAddr for this session'
           break
         else:
@@ -202,16 +173,17 @@ while 1:
           index = -1
           id_flag = 'LL'
 
-    elif 'UN' == flag_id:
+    elif 'UN' == flag_id: #Client has sent us the username and the message to be sent
       
-      #FIXME: Find sender uname ans save it in a var
+      #gets the username of the sender so we can append to message (so recv knows who sent it)
       for index, Client in enumerate(client_list):
         if Client.permAddr == addr[0]:
+          #unreadMsgCnt = client_list[index].unreadCount
           sndrName = client_list[index].userName
           break
         else:
           index = -1
-      
+          id_flag = 'NU' #No user found, try again
 
       #Step 2: Remove the recv name from the message. Find the uName of the recv and append the message to their unreads
       msgTorecv = msg.split(':')[1]
@@ -227,11 +199,11 @@ while 1:
           break
         else:
           index = -1
-          id_flag == 'NU' #no user, try again
+          id_flag = 'NU' #no user, try again
 
-    elif flag_id == 'CM':
+    elif flag_id == 'CM': #Checks unread messages and clears them
       print 'LOG: CHECKING MSGS'
-      for index, Client in enumerate(client_list):
+      for index, Client in enumerate(client_list): #gets the index we need
         if Client.permAddr == addr[0]:
           break
         else:
@@ -243,35 +215,61 @@ while 1:
         msgPacket = 'No messages! \n'
       else:
         for index_2 in range(0, len(msgArr)):
-          #print client_list[index].unread_Msgs[index_2]
+
           msgPacket = msgPacket + msgArr[index_2]
         del client_list[index].unread_Msgs[:]
+        client_list[index].unreadCount = 0
+        unreadMsgCnt = 0
       print msgPacket
       id_flag = 'RM'
 
-    #elif... #Sends a message to everyone on the connectedUsers list. Make sure to skip the send-to at the bottom!!! (OR SEND FLAG BACK TO MENU YOU GENIUS)
-      #also, ignore the sender (or not, the specs are vauge. Just send it to everyone that's connected)
+    elif flag_id == 'br':
+      #first, add the uName of sender to the msg. Find uname by searching where addr[0] = permAddr
+      for index, Client in enumerate(client_list):
+        if Client.permAddr == addr[0]:
+          senderName = client_list[index].userName
+          #unreadMsgCnt = client_list[index].unread_Msgs
+          break
+        else: 
+          index = -1
+          senderName = 'ERRORNAME'
+          #maybe add an error flag
 
-
+      broadcast = 'BROADCAST FROM ' + senderName + ': ' + msg + '\n'
+      for index_2 in range(0, len(connected_users)):
+        for index_3, Client in enumerate(client_list):
+          if Client.permAddr == connected_users[index_2] and Client.permAddr != addr[0]: #sends to all but itself
+            print 'LOG: FOUND CONNECTED USER'
+            client_list[index_3].unread_Msgs.append(broadcast)
+            client_list[index_3].unreadCount = client_list[index_3].unreadCount + 1
+      #now iterate through online users and add the above message to their unread messages attribute (this will also send the message back to sender)
+      id_flag = '15'
     elif flag_id == '++':#error, send previous packet again (this one might need tweaking) Maybe keep a copy of the last packet sent?
       print 'ERROR: Unexpected input from client!'
       #FIXME: Client sends wrong menu choice (aka invalid option) triggers this error!!!
     
     else:
-      print "ERROR: Unexpected error. Packet loss?"
+      print 'ERROR: Unexpected error'
     
-    #DEBUGGING WINDOW
+    #DEBUGGING CODE-----------------------------------------------------
 
     #sends client what server needs accordinf to the values above
     print 'LOG: Got from client: ' + msg + '    Responding/Sending to client: ' + id_flag + ' addr: ' + addr[0]
     
-    #you will need to change this to be able to send messages (or make an if statement if you are afraid of breaking this)
+    print unreadMsgCnt 
+    if unreadMsgCnt > 9: #incase the values go over
+      unReadStr = '+' + 9
+    else:
+      unReadStr = ' ' + str(unreadMsgCnt)
     if flag_id == 'CM':
-      packet = id_flag + msgPacket
+      packet = id_flag + unReadStr + msgPacket
       s.sendto(packet, addr)
     else:
-      s.sendto(id_flag, addr)
+      packet = id_flag + unReadStr
+      print 'LOG: PACKET ' + packet
+      s.sendto(packet, addr)
 
+    print 'LOG: Got from client: ' + msg + '    Responding/Sending to client: ' + packet + ' addr: ' + addr[0]
     print 'LOG: Server recv this from client: ' + msg
     print 'LOG: CURRENT VALUES OF ARRAYS'
     print 'permaddr: '
@@ -286,6 +284,7 @@ while 1:
     pprint(connected_users)
     print 'ALL msgs'
     print [Client.unread_Msgs for Client in client_list]
-
+    print 'UnreadsCnt for user'
+    print [Client.unreadCount for Client in client_list]
      
 s.close() 
